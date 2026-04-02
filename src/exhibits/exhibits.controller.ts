@@ -5,15 +5,23 @@ import { CreateExhibitsDto } from './dto/create-exhibits.dto';
 import { plainToInstance } from 'class-transformer';
 import { Exhibit } from './exhibits.entity';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage, StorageEngine } from 'multer';
 import { v4 as uuidv4 } from 'uuid';
-import * as path from 'path';
-
-import { Request as ExpressRequest } from 'express';
-import type { Express } from 'express';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
+// import cloudinary from '../../cloudinary.config'; // your cloudinary config file
+// import cloudinary from '../cloudinary/cloudinary.config';
+import { v2 as cloudinary } from 'cloudinary';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
+import type { Express } from 'express';
+
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: (req, file) => ({
+        folder: 'Home',         // now works
+        public_id: uuidv4(),        // unique filename
+        format: 'jpg',              // or 'jpg', 'webp'
+    }),
+});
 
 export interface JwtUser {
     id: number;
@@ -24,13 +32,14 @@ export interface RequestWithUser extends Request {
     user: JwtUser;
 }
 
-
 @Controller('api/exhibits')
 @ApiTags('exhibits')
 export class ExhibitsController {
-    constructor(private exhibitsService: ExhibitsService,
+    constructor(
+        private exhibitsService: ExhibitsService,
         private readonly notificationService: NotificationsGateway,
     ) { }
+
 
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth('access-token')
@@ -48,23 +57,12 @@ export class ExhibitsController {
         },
     })
     @UseInterceptors(FileInterceptor('image', {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        storage: diskStorage({
-            destination: './static',
-            filename: (req: ExpressRequest, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void): void => {
-                const ext = path.extname(file.originalname);
-                const uniqueFileName = `${uuidv4()}${ext}`;
-                cb(null, uniqueFileName);
-            },
-        }) as StorageEngine,
+        storage,  // <-- use the constant defined outside the class
         fileFilter: (req, file, cb) => {
             const allowedTypes = /jpeg|jpg|png|webp/;
-            const isValid = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-            if (isValid) {
-                cb(null, true);
-            } else {
-                cb(new BadRequestException('Only image files are allowed'), false);
-            }
+            const isValid = allowedTypes.test(file.mimetype);
+            if (isValid) cb(null, true);
+            else cb(new BadRequestException('Only image files are allowed'), false);
         },
     }))
     async create(
@@ -72,11 +70,10 @@ export class ExhibitsController {
         @Body() createExhibitsDto: CreateExhibitsDto,
         @Request() req: RequestWithUser,
     ) {
-        if (!file) {
-            throw new BadRequestException('Image file is required');
-        }
+        if (!file) throw new BadRequestException('Image file is required');
 
-        const imageUrl = `/static/${file.filename}`;
+        // Cloudinary URL
+        const imageUrl = file.path; // or file.url in some Cloudinary versions
 
         const exhibit = await this.exhibitsService.create(
             imageUrl,
@@ -91,6 +88,7 @@ export class ExhibitsController {
 
         return plainToInstance(Exhibit, exhibit, { excludeExtraneousValues: true });
     }
+
 
     @Get()
     @ApiOperation({ summary: 'Отримати усі пости' })
@@ -133,6 +131,4 @@ export class ExhibitsController {
     ) {
         return this.exhibitsService.getByUser(req.user.id, page, limit);
     }
-
-
 }

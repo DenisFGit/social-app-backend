@@ -1,11 +1,20 @@
+import 'dotenv/config'; // add this as very first line
+import { v2 as cloudinary } from 'cloudinary';
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { seedAdmin } from './seeds/admin.seed';
 import { DataSource } from 'typeorm';
+// import { configureCloudinary } from './cloudinary/cloudinary.config';
 
 async function bootstrap() {
+
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
@@ -31,7 +40,11 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe());
 
+  // console.log('ENV TEST:', process.env.CLOUDINARY_API_KEY);
+
+
   await app.listen(process.env.PORT ?? 3000);
+
 
   const dataSource = app.get<DataSource>(DataSource);
   await seedAdmin(dataSource);

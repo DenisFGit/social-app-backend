@@ -31,6 +31,6 @@ export class Comment {
     @Column()
     userId: number;
 
-    @ManyToOne(() => Exhibit, (exhibit) => exhibit.comments)
+    @ManyToOne(() => Exhibit, (exhibit) => exhibit.comments, { onDelete: 'CASCADE' })
     exhibit: Exhibit;
 }
