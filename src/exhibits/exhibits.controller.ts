@@ -8,8 +8,6 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { v4 as uuidv4 } from 'uuid';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
-// import cloudinary from '../../cloudinary.config'; // your cloudinary config file
-// import cloudinary from '../cloudinary/cloudinary.config';
 import { v2 as cloudinary } from 'cloudinary';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
 import type { Express } from 'express';
@@ -19,7 +17,7 @@ const storage = new CloudinaryStorage({
     params: (req, file) => ({
         folder: 'Home',         // now works
         public_id: uuidv4(),        // unique filename
-        format: 'jpg',              // or 'jpg', 'webp'
+        allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],          // or 'jpg', 'webp'
     }),
 });
 

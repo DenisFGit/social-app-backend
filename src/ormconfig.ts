@@ -1,15 +1,18 @@
 import { DataSource } from 'typeorm';
+import { config } from 'dotenv';
 import { User } from './users/users.entity';
 import { Exhibit } from './exhibits/exhibits.entity';
 import { Comment } from './comments/comments.entity';
+
+config(); // loads .env file
+
 export const AppDataSource = new DataSource({
   type: 'postgres',
-  host: 'localhost',
-  port: 5432,
-  username: 'museum_user',
-  password: 'password',
-  database: 'museum_db',
+  url: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false,
+  },
   entities: [User, Exhibit, Comment],
-  migrations: ['migrations/*.ts'],
-  synchronize: true,
+  migrations: ['src/migrations/*.ts'],
+  synchronize: false,
 });

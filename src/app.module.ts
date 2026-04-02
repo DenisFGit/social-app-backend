@@ -17,13 +17,12 @@ import { CommentsModule } from './comments/comments.module';
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: process.env.DB_USERNAME ?? 'museum_user',
-      password: process.env.DB_PASSWORD ?? 'password',
-      database: process.env.DB_NAME ?? 'museum_db',
+      url: process.env.DATABASE_URL,
+      ssl: {
+        rejectUnauthorized: false,
+      },
       entities: [User, Exhibit, Comment],
-      synchronize: true,
+      synchronize: false, // ⚠️ changed to false for production
     }),
     UsersModule,
     AuthModule,
